@@ -1,13 +1,14 @@
-use crate::inactive_device::InactiveDevice;
-use crate::uninitialized_device::UninitializedDevice;
 use bit_field::BitArray;
-use bus::{ActiveBus, ActiveFourWire, ActiveThreeWire, FourWire, ThreeWire};
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
-use interface::Interface;
-use network::Network;
-use register;
-use socket::Socket;
+
+use crate::bus::{ActiveBus, ActiveFourWire, ActiveThreeWire, FourWire, ThreeWire};
+use crate::inactive_device::InactiveDevice;
+use crate::interface::Interface;
+use crate::network::Network;
+use crate::register;
+use crate::socket::Socket;
+use crate::uninitialized_device::UninitializedDevice;
 
 pub struct Device<SpiBus: ActiveBus, NetworkImpl: Network> {
     pub bus: SpiBus,

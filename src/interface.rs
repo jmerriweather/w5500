@@ -1,14 +1,13 @@
+use core::cell::RefCell;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
 use embedded_nal::Ipv4Addr;
 
+use crate::bus::{ActiveBus, ActiveFourWire, FourWire};
+use crate::device::Device;
+use crate::network::{Manual, Network};
+use crate::uninitialized_device::{InitializeError, UninitializedDevice};
 use crate::{MacAddress, Mode};
-
-use bus::{ActiveBus, ActiveFourWire, FourWire};
-use core::cell::RefCell;
-use device::Device;
-use network::{Manual, Network};
-use uninitialized_device::{InitializeError, UninitializedDevice};
 
 pub struct Interface<SpiBus: ActiveBus, NetworkImpl: Network> {
     pub device: RefCell<Device<SpiBus, NetworkImpl>>,

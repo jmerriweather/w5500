@@ -1,8 +1,16 @@
 # W5500 Driver
 
-This crate is a driver for the WIZnet W5500 chips.  The W5500 chip is a hardwired TCP/IP embedded Ethernet controller
-that enables easier internet connection for embedded systems using SPI (Serial Peripheral Interface).  It is one of the
-more popular platforms for Ethernet modules on Arduino platforms.
+This crate is a driver for the WIZnet W5500 chip.  The W5500 chip is a hardwired TCP/IP embedded Ethernet controller
+that enables embedded systems using SPI (Serial Peripheral Interface) to access the LAN. It is one of the
+more popular ethernet modules on Arduino platforms.
+
+
+[![Build Status](https://github.com/kellerkindt/w5500/workflows/Rust/badge.svg)](https://github.com/kellerkindt/w5500/actions?query=workflow%3ARust)
+[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](https://github.com/kellerkindt/w5500)
+[![Crates.io](https://img.shields.io/crates/v/w5500.svg)](https://crates.io/crates/w5500)
+[![Documentation](https://docs.rs/w5500/badge.svg)](https://docs.rs/w5500)
+[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/kellerkindt/w5500/issues/new)
+
 
 ## Embedded-HAL
 
@@ -57,14 +65,14 @@ of the SPI implementation.  It must be set up to work as the W5500 chip requires
     active.set_subnet(IpAddress::new(255, 255, 255, 0)).unwrap();
     active.set_gateway(IpAddress::new(192, 168, 0, 1)).unwrap();
 
-    let socket0: UninitializedSocket = w5500.take_socket(Socket::Socket0).unwrap();
-    let udp_server_socket = (&mut w5500, socket0).try_into_udp_server_socket(1234).unwrap();
+    let socket0: UninitializedSocket = active.take_socket(Socket::Socket0).unwrap();
+    let udp_server_socket = (&mut active, socket0).try_into_udp_server_socket(1234).unwrap();
 
     let mut buffer = [0u8; 256];
     let response = [104, 101, 108, 108, 111, 10];// "hello" as ASCII
     loop {
-        if let Ok(Some((ip, port, len))) = udp_server_socket.receive(&mut buffer[..]) {
-            udp_server_socket.blocking_send(ip, port, response[..]).unwrap();
+        if let Ok(Some((ip, port, len))) = (&mut active, udp_server_socket).receive(&mut buffer[..]) {
+            (&mut active, udp_server_socket).blocking_send(ip, port, response[..]).unwrap();
         }
     }
 ```
@@ -79,4 +87,3 @@ In no particular order, things to do to improve this driver.
 * Make reset safe by requiring that all sockets be returned to the pool first
 * Support a 3-wire SPI bus
 * Sane defaults for IP/Gateway/Subnet
-* Improve documentation

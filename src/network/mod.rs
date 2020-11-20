@@ -50,7 +50,7 @@ pub trait Network {
             current.subnet = settings.subnet;
         }
         if settings.mac != current.mac {
-            let mut address = settings.mac.address;
+            let mut address = settings.mac.octets;
             bus.write_frame(register::COMMON, register::common::MAC, &mut address)?;
             current.mac = settings.mac;
         }

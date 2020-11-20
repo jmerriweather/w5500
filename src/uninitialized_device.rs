@@ -1,11 +1,11 @@
+use crate::bus::{ActiveBus, ActiveFourWire, ActiveThreeWire};
+use crate::device::Device;
 use crate::network::{Dhcp, Manual, Network};
+use crate::register;
 use crate::{MacAddress, Mode};
-use bus::{ActiveBus, ActiveFourWire, ActiveThreeWire};
-use device::Device;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
 use embedded_nal::Ipv4Addr;
-use register;
 
 pub struct UninitializedDevice<SpiBus: ActiveBus> {
     bus: SpiBus,

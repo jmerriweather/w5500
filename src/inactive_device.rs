@@ -1,8 +1,8 @@
-use bus::{ActiveFourWire, ActiveThreeWire, Bus, FourWire, ThreeWire};
-use device::Device;
+use crate::bus::{ActiveFourWire, ActiveThreeWire, Bus, FourWire, ThreeWire};
+use crate::device::Device;
+use crate::network::Network;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
-use network::Network;
 
 pub struct InactiveDevice<SpiBus: Bus, NetworkImpl: Network> {
     bus: SpiBus,
