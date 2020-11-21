@@ -1,5 +1,6 @@
 #![no_std]
 #![allow(unused)]
+#![deny(broken_intra_doc_links)]
 
 #[macro_use(block)]
 extern crate nb;
