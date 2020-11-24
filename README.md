@@ -31,7 +31,7 @@ of the SPI implementation.  It must be set up to work as the W5500 chip requires
 
 ```rust
     let mut spi = ...; // SPI interface to use
-    let mut cs : OutputPin = ...; // chip select
+    let mut cs: OutputPin = ...; // chip select
 
     let interface = Interface::setup(spi, cs, MacAddress::new(0, 1, 2, 3, 4, 5), Ipv4Addr::new(192, 168, 86, 79)).unwrap();
     let socket = interface.connect(
