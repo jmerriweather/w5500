@@ -1,10 +1,5 @@
 #![no_std]
-// #![allow(unused)]
-
-extern crate bit_field;
-extern crate byteorder;
-extern crate embedded_hal;
-extern crate embedded_nal;
+#![allow(unused)]
 
 #[macro_use(block)]
 extern crate nb;
