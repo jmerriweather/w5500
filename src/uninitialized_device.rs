@@ -115,6 +115,7 @@ impl<SpiBus: ActiveBus> UninitializedDevice<SpiBus> {
         mut host: HostImpl,
         mode_options: Mode,
     ) -> Result<Device<SpiBus, HostImpl>, InitializeError<SpiBus::Error>> {
+        #[cfg(not(feature = "no-chip-version-assertion"))]
         self.assert_chip_version(0x4)?;
 
         // RESET
