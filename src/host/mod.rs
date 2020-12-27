@@ -50,7 +50,7 @@ pub trait Host {
             current.subnet = settings.subnet;
         }
         if settings.mac != current.mac {
-            let address = settings.mac.octets;
+            let address = settings.mac.octets();
             bus.write_frame(register::COMMON, register::common::MAC, &address)?;
             current.mac = settings.mac;
         }

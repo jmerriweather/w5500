@@ -4,7 +4,7 @@
 #[derive(Copy, Clone, Eq, PartialEq, Ord, PartialOrd, Debug, Hash, Default)]
 pub struct MacAddress {
     /// Octets of the MAC address.
-    pub octets: [u8; 6],
+    octets: [u8; 6],
 }
 
 impl MacAddress {
@@ -40,6 +40,10 @@ impl MacAddress {
         MacAddress {
             octets: [a, b, c, d, e, f],
         }
+    }
+
+    pub fn octets(&self) -> [u8; 6] {
+        self.octets
     }
 
     /// An EUI-48 MAC address representing an unspecified address:
