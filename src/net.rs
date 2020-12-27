@@ -60,6 +60,12 @@ impl MacAddress {
     pub const UNSPECIFIED: Self = MacAddress::new(0, 0, 0, 0, 0, 0);
 }
 
+impl From<[u8; 6]> for MacAddress {
+    fn from(octets: [u8; 6]) -> Self {
+        Self { octets }
+    }
+}
+
 impl ::core::fmt::Display for MacAddress {
     /// String formatter for MacAddress addresses.
     fn fmt(&self, fmt: &mut ::core::fmt::Formatter) -> ::core::fmt::Result {
