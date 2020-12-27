@@ -6,8 +6,10 @@ mod three_wire;
 
 pub use self::four_wire::ActiveFourWire;
 pub use self::four_wire::FourWire;
+pub use self::four_wire::FourWireError;
 pub use self::three_wire::ActiveThreeWire;
 pub use self::three_wire::ThreeWire;
+pub use self::three_wire::ThreeWireError;
 
 pub trait Bus {}
 
