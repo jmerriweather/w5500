@@ -53,6 +53,22 @@ impl<SpiBus: ActiveBus> UninitializedDevice<SpiBus> {
         self.initialize_with_host(host, mode_options)
     }
 
+    /// Initialize the device with a MAC, IP address and mode settings.
+    ///
+    /// Consider using freely available private/locally administered mac
+    /// addresses that match the following hex pattern:
+    ///
+    /// ```code
+    ///  x2-xx-xx-xx-xx-xx
+    ///  x6-xx-xx-xx-xx-xx
+    ///  xA-xx-xx-xx-xx-xx
+    ///  xE-xx-xx-xx-xx-xx
+    /// ```
+    ///
+    /// "Universally administered and locally administered addresses are
+    /// distinguished by setting the second-least-significant bit of the first
+    /// octet of the address"
+    /// [Wikipedia](https://en.wikipedia.org/wiki/MAC_address#Universal_vs._local)
     pub fn initialize_manual(
         self,
         mac: MacAddress,
@@ -66,6 +82,22 @@ impl<SpiBus: ActiveBus> UninitializedDevice<SpiBus> {
         self.initialize_advanced(mac, ip, gateway, subnet, mode_options)
     }
 
+    /// Initialize the device with a MAC, IP, Gateway, Subnet address and mode settings.
+    ///
+    /// Consider using freely available private/locally administered mac
+    /// addresses that match the following hex pattern:
+    ///
+    /// ```code
+    ///  x2-xx-xx-xx-xx-xx
+    ///  x6-xx-xx-xx-xx-xx
+    ///  xA-xx-xx-xx-xx-xx
+    ///  xE-xx-xx-xx-xx-xx
+    /// ```
+    ///
+    /// "Universally administered and locally administered addresses are
+    /// distinguished by setting the second-least-significant bit of the first
+    /// octet of the address"
+    /// [Wikipedia](https://en.wikipedia.org/wiki/MAC_address#Universal_vs._local)
     pub fn initialize_advanced(
         self,
         mac: MacAddress,
