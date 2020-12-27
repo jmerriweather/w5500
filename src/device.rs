@@ -75,7 +75,7 @@ impl<SpiBus: ActiveBus, HostImpl: Host> Device<SpiBus, HostImpl> {
     }
 
     pub fn release_socket(&mut self, socket: Socket) {
-        self.sockets.set_bit(socket.index.into(), true);
+        self.sockets.set_bit(socket.index().into(), true);
     }
 
     pub fn release(self) -> (SpiBus, HostImpl) {

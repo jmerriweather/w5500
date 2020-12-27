@@ -3,10 +3,7 @@ use crate::register::socketn;
 use embedded_nal::Ipv4Addr;
 
 pub struct Socket {
-    pub index: u8,
-    register: u8,
-    tx_buffer: u8,
-    rx_buffer: u8,
+    index: u8,
 }
 
 impl Socket {
@@ -21,23 +18,21 @@ impl Socket {
          * Socket 1 RX is at address 0x07
          * ...
          */
-        let block = index * 4;
-        Socket {
-            index,
-            register: block + 1,
-            tx_buffer: block + 2,
-            rx_buffer: block + 3,
-        }
+        Socket { index }
     }
 
-    pub fn register(&self) -> u8 {
-        self.register
+    pub const fn index(&self) -> u8 {
+        self.index
     }
-    pub fn tx_buffer(&self) -> u8 {
-        self.tx_buffer
+
+    pub const fn register(&self) -> u8 {
+        (self.index * 4) + 1
     }
-    pub fn rx_buffer(&self) -> u8 {
-        self.rx_buffer
+    pub const fn tx_buffer(&self) -> u8 {
+        (self.index * 4) + 2
+    }
+    pub const fn rx_buffer(&self) -> u8 {
+        (self.index * 4) + 3
     }
 
     pub fn set_mode<SpiBus: ActiveBus>(
