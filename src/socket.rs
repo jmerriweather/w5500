@@ -7,7 +7,7 @@ pub struct Socket {
 }
 
 impl Socket {
-    pub fn new(index: u8) -> Self {
+    pub const fn new(index: u8) -> Self {
         /*
          * Socket 0 is at address    0x01
          * Socket 0 TX is at address 0x02
