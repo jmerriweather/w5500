@@ -39,10 +39,10 @@ pub enum ArpResponses {
 
 #[derive(Copy, Clone, PartialEq)]
 pub struct Mode {
-    on_wake_on_lan: OnWakeOnLan,
-    on_ping_request: OnPingRequest,
-    connection_type: ConnectionType,
-    arp_responses: ArpResponses,
+    pub on_wake_on_lan: OnWakeOnLan,
+    pub on_ping_request: OnPingRequest,
+    pub connection_type: ConnectionType,
+    pub arp_responses: ArpResponses,
 }
 
 impl Default for Mode {
@@ -58,8 +58,8 @@ impl Default for Mode {
 
 pub mod bus;
 mod device;
-mod host;
-mod inactive_device;
+pub mod host;
+pub mod inactive_device;
 pub mod interface;
 pub mod net;
 pub mod register;
@@ -67,5 +67,11 @@ mod socket;
 mod udp;
 pub mod uninitialized_device;
 
+#[deprecated(note = "Use `Ipv4Addr` instead")]
+pub use embedded_nal::Ipv4Addr as IpAddress;
+pub use embedded_nal::Ipv4Addr;
 pub use interface::Interface;
 pub use net::MacAddress;
+pub use socket::Socket;
+pub use udp::UdpSocket;
+pub use udp::UdpSocketError;
