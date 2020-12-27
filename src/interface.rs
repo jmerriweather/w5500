@@ -10,7 +10,7 @@ use crate::uninitialized_device::{InitializeError, UninitializedDevice};
 use crate::{MacAddress, Mode};
 
 pub struct Interface<SpiBus: ActiveBus, HostImpl: Host> {
-    pub device: RefCell<Device<SpiBus, HostImpl>>,
+    pub(crate) device: RefCell<Device<SpiBus, HostImpl>>,
 }
 
 impl<SpiBus: ActiveBus, HostImpl: Host> Interface<SpiBus, HostImpl> {

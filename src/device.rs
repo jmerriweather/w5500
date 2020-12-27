@@ -11,7 +11,7 @@ use crate::socket::Socket;
 use crate::uninitialized_device::UninitializedDevice;
 
 pub struct Device<SpiBus: ActiveBus, HostImpl: Host> {
-    pub bus: SpiBus,
+    pub(crate) bus: SpiBus,
     host: HostImpl,
     sockets: [u8; 1],
 }
