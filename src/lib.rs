@@ -5,12 +5,17 @@
 extern crate nb;
 
 pub mod net;
+use core::convert::TryInto;
+use std::io::Read;
+
 pub use net::{Ipv4Addr, MacAddress};
 
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
 use embedded_hal::digital::v2::OutputPin;
 use embedded_hal::spi::FullDuplex;
+use embedded_hal::blocking::spi::Transfer;
+use embedded_hal::blocking::spi::Write;
 
 const COMMAND_READ: u8 = 0x00 << 2;
 const COMMAND_WRITE: u8 = 0x01 << 2;
@@ -208,7 +213,7 @@ impl<ChipSelectError, ChipSelect: OutputPin<Error = ChipSelectError>> W5500<Chip
 
     /// Creates a new instance and initializes the device accordingly to the parameters.
     /// To do so, it briefly activates the [`W5500`], to set it up with the specified configuration.
-    pub fn with_initialisation<Spi: FullDuplex<u8>>(
+    pub fn with_initialisation<Spi: Transfer<u8>>(
         chip_select: ChipSelect,
         spi: &mut Spi,
         wol: OnWakeOnLan,
@@ -242,7 +247,7 @@ impl<ChipSelectError, ChipSelect: OutputPin<Error = ChipSelectError>> W5500<Chip
 
     /// Returns a [`ActiveW5500`] which can be used to modify the device and to communicate
     /// with other ethernet devices within the connected LAN.
-    pub fn activate<'a, 'b, Spi: FullDuplex<u8>>(
+    pub fn activate<'a, 'b, Spi: Transfer<u8>>(
         &'a mut self,
         spi: &'b mut Spi,
     ) -> Result<ActiveW5500<'a, 'b, ChipSelect, Spi>, TransferError<Spi::Error, ChipSelectError>>
@@ -256,7 +261,7 @@ impl<ChipSelectError, ChipSelect: OutputPin<Error = ChipSelectError>> W5500<Chip
 /// as well as its current state. The given SPI interface is borrowed for as long as this
 /// instance lives to communicate with the W5500 chip. Drop this instance to re-use the
 /// SPI bus for communication with another device.
-pub struct ActiveW5500<'a, 'b, ChipSelect: OutputPin, Spi: FullDuplex<u8>>(
+pub struct ActiveW5500<'a, 'b, ChipSelect: OutputPin, Spi: Transfer<u8>>(
     &'a mut W5500<ChipSelect>,
     &'b mut Spi,
 );
@@ -265,7 +270,7 @@ impl<
         ChipSelectError,
         ChipSelect: OutputPin<Error = ChipSelectError>,
         SpiError,
-        Spi: FullDuplex<u8, Error = SpiError>,
+        Spi: Transfer<u8, Error = SpiError>,
     > ActiveW5500<'_, '_, ChipSelect, Spi>
 {
     /// Returns the requested socket if it is not already taken. See [`W5500::take_socket`]
@@ -356,7 +361,8 @@ impl<
         register: Register,
     ) -> Result<Ipv4Addr, TransferError<SpiError, ChipSelectError>> {
         let mut ip = Ipv4Addr::default();
-        self.read_from(register, &mut ip.octets)?;
+        ip.octets = self.read_from(register)?.try_into().expect("slice with incorrect length");
+        //self.read_from(register, &mut ip.octets)?;
         Ok(ip)
     }
 
@@ -386,7 +392,7 @@ impl<
         interrupt: Interrupt,
     ) -> Result<bool, TransferError<SpiError, ChipSelectError>> {
         let mut state = [0u8; 1];
-        self.read_from(socket.at(SocketRegister::Interrupt), &mut state)?;
+        state = self.read_from(socket.at(SocketRegister::Interrupt))?.try_into().expect("slice with incorrect length");
         Ok(state[0] & interrupt as u8 != 0)
     }
 
@@ -405,7 +411,7 @@ impl<
         register: Register,
     ) -> Result<u8, TransferError<SpiError, ChipSelectError>> {
         let mut buffer = [0u8; 1];
-        self.read_from(register, &mut buffer)?;
+        buffer = self.read_from(register)?.try_into().expect("slice with incorrect length");
         Ok(buffer[0])
     }
 
@@ -415,7 +421,7 @@ impl<
         register: Register,
     ) -> Result<u16, TransferError<SpiError, ChipSelectError>> {
         let mut buffer = [0u8; 2];
-        self.read_from(register, &mut buffer)?;
+        buffer = self.read_from(register)?.try_into().expect("slice with incorrect length");
         Ok(BigEndian::read_u16(&buffer))
     }
 
@@ -423,8 +429,7 @@ impl<
     fn read_from(
         &mut self,
         register: Register,
-        target: &mut [u8],
-    ) -> Result<(), TransferError<SpiError, ChipSelectError>> {
+    ) -> Result<&[u8], TransferError<SpiError, ChipSelectError>> {
         self.chip_select()
             .map_err(|error| -> TransferError<SpiError, ChipSelectError> {
                 TransferError::ChipSelectError(error)
@@ -435,9 +440,13 @@ impl<
             register.control_byte() | COMMAND_READ | VARIABLE_DATA_LENGTH,
         ];
         BigEndian::write_u16(&mut request[..2], register.address());
-        let result = self
-            .write_bytes(&request)
-            .and_then(|_| self.read_bytes(target));
+
+
+        let result = self.1.transfer(&mut request);
+
+        // let result = self
+        //     .write_bytes(&request)
+        //     .and_then(|_| self.read_bytes(target));
         self.chip_deselect()
             .map_err(|error| -> TransferError<SpiError, ChipSelectError> {
                 TransferError::ChipSelectError(error)
@@ -457,8 +466,12 @@ impl<
     fn read(&mut self) -> Result<u8, SpiError> {
         // SPI is in read/write sync, for every byte one wants to read, a byte needs
         // to be written
-        block!(self.1.send(0x00))?;
-        block!(self.1.read())
+        //block!(self.1.transfer(0x00))?;
+        // block!(self.1.send(0x00))?;
+        // block!(self.1.read())
+        let mut request = [0_u8];
+
+        return Ok(self.1.transfer(&mut request)?[0]);
     }
 
     /// Write a single u8 byte to the given [`Register`]
@@ -497,14 +510,17 @@ impl<
             register.control_byte() | COMMAND_WRITE | VARIABLE_DATA_LENGTH,
         ];
         BigEndian::write_u16(&mut request[..2], register.address());
-        let result = self
-            .write_bytes(&request)
-            .and_then(|_| self.write_bytes(data));
+
+        let result = self.1.transfer(&mut request);
+
+        // let result = self
+        //     .write_bytes(&request)
+        //     .and_then(|_| self.write_bytes(data));
         self.chip_deselect()
             .map_err(|error| -> TransferError<SpiError, ChipSelectError> {
                 TransferError::ChipSelectError(error)
             })?;
-        result.map_err(TransferError::SpiError)
+        result.map(|i| ()).map_err(TransferError::SpiError)
     }
 
     /// Write a slice of u8 bytes over SPI
@@ -517,10 +533,11 @@ impl<
 
     /// Write a single byte over SPI
     fn write(&mut self, byte: u8) -> Result<(), SpiError> {
-        block!(self.1.send(byte))?;
+        //block!(self.1.send(byte))?;
         // SPI is in read/write sync, for every byte one wants to write, a byte needs
         // to be read
-        block!(self.1.read())?;
+        //block!(self.1.read())?;
+        self.1.transfer(&mut [byte])?;
         Ok(())
     }
 
@@ -541,7 +558,7 @@ pub trait IntoUdpSocket<SpiError> {
         Self: Sized;
 }
 
-impl<ChipSelect: OutputPin, Spi: FullDuplex<u8>> IntoUdpSocket<UninitializedSocket>
+impl<ChipSelect: OutputPin, Spi: Transfer<u8>> IntoUdpSocket<UninitializedSocket>
     for (
         &mut ActiveW5500<'_, '_, ChipSelect, Spi>,
         UninitializedSocket,
@@ -585,7 +602,7 @@ pub trait Udp {
     ) -> Result<(), Self::Error>;
 }
 
-impl<ChipSelect: OutputPin, Spi: FullDuplex<u8>> Udp
+impl<ChipSelect: OutputPin, Spi: Transfer<u8>> Udp
     for (&mut ActiveW5500<'_, '_, ChipSelect, Spi>, &UdpSocket)
 {
     type Error = TransferError<Spi::Error, ChipSelect::Error>;
@@ -622,9 +639,8 @@ impl<ChipSelect: OutputPin, Spi: FullDuplex<u8>> Udp
                 .len()
                 .min(w5500.read_u16(socket.rx_register_at(read_pointer + 6))? as usize);
 
-            w5500.read_from(
-                socket.rx_register_at(read_pointer + 8),
-                &mut destination[..data_length],
+            let destination_buf = w5500.read_from(
+                socket.rx_register_at(read_pointer + 8)
             )?;
 
             // reset
