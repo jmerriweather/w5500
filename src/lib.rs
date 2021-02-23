@@ -6,7 +6,7 @@ extern crate nb;
 
 pub mod net;
 use core::convert::TryInto;
-use std::io::Read;
+use core2::io::{self as io, BufRead, Cursor, Read};
 
 pub use net::{Ipv4Addr, MacAddress};
 
@@ -361,7 +361,7 @@ impl<
         register: Register,
     ) -> Result<Ipv4Addr, TransferError<SpiError, ChipSelectError>> {
         let mut ip = Ipv4Addr::default();
-        ip.octets = self.read_from(register)?.try_into().expect("slice with incorrect length");
+        self.read_from(register, &mut ip.octets)?;
         //self.read_from(register, &mut ip.octets)?;
         Ok(ip)
     }
@@ -392,7 +392,7 @@ impl<
         interrupt: Interrupt,
     ) -> Result<bool, TransferError<SpiError, ChipSelectError>> {
         let mut state = [0u8; 1];
-        state = self.read_from(socket.at(SocketRegister::Interrupt))?.try_into().expect("slice with incorrect length");
+        self.read_from(socket.at(SocketRegister::Interrupt), &mut state)?;
         Ok(state[0] & interrupt as u8 != 0)
     }
 
@@ -411,7 +411,7 @@ impl<
         register: Register,
     ) -> Result<u8, TransferError<SpiError, ChipSelectError>> {
         let mut buffer = [0u8; 1];
-        buffer = self.read_from(register)?.try_into().expect("slice with incorrect length");
+        self.read_from(register, &mut buffer)?;
         Ok(buffer[0])
     }
 
@@ -421,7 +421,7 @@ impl<
         register: Register,
     ) -> Result<u16, TransferError<SpiError, ChipSelectError>> {
         let mut buffer = [0u8; 2];
-        buffer = self.read_from(register)?.try_into().expect("slice with incorrect length");
+        self.read_from(register, &mut buffer)?;
         Ok(BigEndian::read_u16(&buffer))
     }
 
@@ -429,7 +429,8 @@ impl<
     fn read_from(
         &mut self,
         register: Register,
-    ) -> Result<&[u8], TransferError<SpiError, ChipSelectError>> {
+        target: &[u8],
+    ) -> Result<(), TransferError<SpiError, ChipSelectError>> {
         self.chip_select()
             .map_err(|error| -> TransferError<SpiError, ChipSelectError> {
                 TransferError::ChipSelectError(error)
@@ -451,7 +452,11 @@ impl<
             .map_err(|error| -> TransferError<SpiError, ChipSelectError> {
                 TransferError::ChipSelectError(error)
             })?;
-        result.map_err(TransferError::SpiError)
+
+        result.map(|m| {
+            target = m;
+            ()
+        }).map_err(TransferError::SpiError)
     }
 
     /// Reads enough bytes over SPI to fill the `target` u8 slice
@@ -511,7 +516,14 @@ impl<
         ];
         BigEndian::write_u16(&mut request[..2], register.address());
 
-        let result = self.1.transfer(&mut request);
+        match self.1.transfer(&mut request) {
+            Ok(result) => {
+
+            }
+            Err(error) => {
+                return Err(TransferError::SpiError(error));
+            }
+        }
 
         // let result = self
         //     .write_bytes(&request)
@@ -520,7 +532,8 @@ impl<
             .map_err(|error| -> TransferError<SpiError, ChipSelectError> {
                 TransferError::ChipSelectError(error)
             })?;
-        result.map(|i| ()).map_err(TransferError::SpiError)
+
+        Ok(())
     }
 
     /// Write a slice of u8 bytes over SPI
@@ -639,8 +652,9 @@ impl<ChipSelect: OutputPin, Spi: Transfer<u8>> Udp
                 .len()
                 .min(w5500.read_u16(socket.rx_register_at(read_pointer + 6))? as usize);
 
-            let destination_buf = w5500.read_from(
-                socket.rx_register_at(read_pointer + 8)
+            w5500.read_from(
+                socket.rx_register_at(read_pointer + 8),
+                &mut destination[..data_length],
             )?;
 
             // reset
