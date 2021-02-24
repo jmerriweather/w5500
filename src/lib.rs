@@ -184,7 +184,9 @@ impl core::convert::From<u8> for PhyCfg {
     }
 }
 
+
 /// Represents a [`Socket`] that has not yet been initialized for a particular protocol
+#[derive(Debug)]
 pub struct UninitializedSocket(Socket);
 
 /// Represents a [`Socket`] that has been initialized to use the UDP protocol
@@ -259,7 +261,7 @@ impl<ChipSelectError, ChipSelect: OutputPin<Error = ChipSelectError>> W5500<Chip
 /// as well as its current state. The given SPI interface is borrowed for as long as this
 /// instance lives to communicate with the W5500 chip. Drop this instance to re-use the
 /// SPI bus for communication with another device.
-pub struct ActiveW5500<'a, 'b, ChipSelect: OutputPin, Spi: Transfer<u8>>(
+pub struct ActiveW5500<'a, 'b, ChipSelect: OutputPin, Spi: Transfer<u8> + Write<u8>>(
     &'a mut W5500<ChipSelect>,
     &'b mut Spi,
 );
@@ -444,8 +446,8 @@ impl<
 
         match self.1.transfer(&mut request) {
             Ok(response) => {
-                for (i, &item) in response.iter().enumerate() {
-                    target[i] = item;
+                for i in 0..target.len() {
+                    target[i] = response[i];
                 }
             }
             Err(error) => {
@@ -525,7 +527,6 @@ impl<
         self.0.chip_select.set_high()
     }
 }
-
 
 pub trait IntoUdpSocket<SpiError> {
     fn try_into_udp_server_socket(self, port: u16) -> Result<UdpSocket, SpiError>
