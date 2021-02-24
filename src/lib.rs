@@ -10,7 +10,6 @@ pub use net::{Ipv4Addr, MacAddress};
 use byteorder::BigEndian;
 use byteorder::ByteOrder;
 use embedded_hal::digital::v2::OutputPin;
-use embedded_hal::spi::FullDuplex;
 use embedded_hal::blocking::spi::Transfer;
 use embedded_hal::blocking::spi::Write;
 
@@ -465,27 +464,6 @@ impl<
         Ok(())
     }
 
-    /// Reads enough bytes over SPI to fill the `target` u8 slice
-    // fn read_bytes(&mut self, bytes: &mut [u8]) -> Result<(), TransferError<<Spi as Transfer<u8>>::Error, <Spi as Write<u8>>::Error, ChipSelectError>> {
-    //     let mut request = [0_u8];
-    //     let mut found_bytes = self.1.transfer(&mut request);
-    //         // .map_err(|error| -> TransferError<SpiError, SpiWriteError, ChipSelectError> {
-    //         //     TransferError::SpiError(error)
-    //         // });
-    //     match found_bytes {
-    //         Ok(response) => {
-
-    //         }
-    //         Err(error ) => {
-    //             return Err(TransferError::SpiError(error));
-    //         }
-    //     }
-
-    //     bytes = *found_bytes;
-
-    //     Ok(())
-    // }
-
     /// Write a single u8 byte to the given [`Register`]
     fn write_u8(
         &mut self,
@@ -523,10 +501,8 @@ impl<
         ];
         BigEndian::write_u16(&mut request[..2], register.address());
 
-        let mut new_data = &mut data;
-
-        self.1.transfer(&mut request).map_err(TransferError::SpiError)?;
-        self.1.transfer(&mut new_data).map_err(TransferError::SpiError)?;
+        self.1.write(&request).map_err(TransferError::SpiWriteError)?;
+        self.1.write(data).map_err(TransferError::SpiWriteError)?;
 
         // let result = self
         //     .write_bytes(&request)
@@ -536,24 +512,6 @@ impl<
                 TransferError::ChipSelectError(error)
             })?;
 
-        Ok(())
-    }
-
-    /// Write a slice of u8 bytes over SPI
-    fn write_bytes(&mut self, bytes: &[u8]) -> Result<(), SpiError> {
-        for b in bytes {
-            self.write(*b)?;
-        }
-        Ok(())
-    }
-
-    /// Write a single byte over SPI
-    fn write(&mut self, byte: u8) -> Result<(), SpiError> {
-        //block!(self.1.send(byte))?;
-        // SPI is in read/write sync, for every byte one wants to write, a byte needs
-        // to be read
-        //block!(self.1.read())?;
-        self.1.transfer(&mut [byte])?;
         Ok(())
     }
 
@@ -568,15 +526,6 @@ impl<
     }
 }
 
-
-fn copy_slice(dst: &mut [u8], src: &[u8]) -> usize {
-    let mut c = 0;
-    for (d, s) in dst.iter_mut().zip(src.iter()) {
-        *d = *s;
-        c += 1;
-    }
-    c
-}
 
 pub trait IntoUdpSocket<SpiError> {
     fn try_into_udp_server_socket(self, port: u16) -> Result<UdpSocket, SpiError>
